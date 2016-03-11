@@ -1,0 +1,315 @@
+---
+title: "qPCR of vaginal explant and epithelial cell RNA"
+author: "Claire Levy"
+date: "March 9, 2016"
+output: html_document
+---
+
+These data are from qPCR experiments done by Erik Layton(Corey/Zhu lab) using the same RNA that was used on the epithelial and explant microarray experiments. 
+
+We chose one HSV2 gene (ICP27, Immediate Early) and used beta actin (ACTB) as a housekeeper for the epithelial cell assay. The assays use a FAM dye label and a non-fluorescent quencher.
+
+##Epithelial Cell Results
+
+Caveats for epithelial cell qPCR data:
+
+We weren't able to find the RNA from the epithelial cells donor 3
+
+We excluded the sample that was "3E" on the microarray (HVE 4 ,24hr, V186) because we wouldnt be able to compare it to the microarray results (it was excluded because of a possible pipetting error).
+
+Erik plotted the data and his plot seems to show that the two _different viruses_ have almost the exact same trajectory in the _different donors_. I.e. Donor1 V186 looks the same as Donor 4 SD90 and vice versa. He suggested that this was maybe a labeling error. I did the analysis starting from the raw data and got a less unusal result: Each virus looks about the same in the different donor.
+
+Conclusion: There may have been an error in matching the samples to the sample wells, I can double check with Erik.
+
+```{r, echo=FALSE,warning=FALSE, message= FALSE}
+
+library(dplyr)
+library(stringr)
+library(plateR)
+library(pander)
+library(reshape2)
+library(ggplot2)
+
+#I made this plate layout by 
+
+#this is just the CTs and well positions
+#from file "2016-03-07 florian lab cell culture.xlsx"
+
+results<-read.csv("cells CT and well only.csv")
+
+#Adding in the layout that I made manually from Erik's data 
+#from file "2016-03-07 florian lab cell culture.xlsx"
+
+dat<-add_plate(file="cells qPCR plate layout.csv",results, "Wells")
+#There were some wells where I didn't know what the contents were and they were all undetermined. I think they are controls but will check with EL. I Put unknown for the Gene and and sample in those wells and will remove them here.
+
+dat<-filter(dat, Sample != "unknown")
+
+
+#load the file will more annotation data for the results( other than sample name)
+load("Cells_RNA_for_qPCR.Rdata")
+
+#merge in with results by the common columns
+dat_ann<-merge(dat,Cells_RNA_for_qPCR, by.x = "Sample", by.y = "TubeLabel")
+
+
+
+#sanity check : dat_ann still has 68 values
+
+
+```
+
+These replicates got "Undetermined" results from the qPCR machine, but all were Mock samples and the concentration looks ok.
+
+```{r, echo=FALSE, warnings = FALSE}
+undet<-dat_ann %>%
+  filter(CT=="Undetermined")%>%
+  select(TissueID,Treatment,Time,Gene, newNanodrop)
+  
+  
+pander(undet)
+```
+
+This is a plot of the fold change in the ICP27 gene on a log10 scale. Each panel shows data from a different tissue donor. The missing sample on the right panel is the one we left out intentionally.To get the ddCT,we subtracted the dCT from 24, since that was the approx CT for the all the Mock infections.
+
+```{r, echo=FALSE, warnings = FALSE}
+### CALCULATIONS
+#Steps for analysis:
+
+
+#remove the undetermined
+
+dat_ann<-dat_ann %>%
+  filter(CT!="Undetermined")
+
+
+
+#First make CT numeric so it stops throwing errors
+#If you just do as.numeric, R changes it to the factor level,
+#NOT the actual number, so change to character first.
+
+dat_ann$CT<-as.numeric(as.character(dat_ann$CT))
+
+
+
+# Average the replicates, using just one rep if the other was undet.
+avg_dat_ann<-dat_ann%>%
+  arrange(Sample)%>%
+  group_by(Gene, TissueID, Treatment, Time, Sample)%>%
+  summarise(AvgCT = mean(CT))%>%
+  ungroup()
+  
+#put the genes in their own dfs
+ACTBavg<-avg_dat_ann%>%
+  filter(Gene =="ACTB")
+
+ICP27avg<-avg_dat_ann%>%
+  filter(Gene =="ICP27")%>%
+  select(-Gene)
+ 
+
+#add the ACTB data onto the side of the ICP27 data to prepare for subracting
+dCT<-cbind(ICP27avg, ACTBavg$AvgCT)
+
+names(dCT)[5:6]<-c("ICP27AvgCT","ACTBAvgCT")
+
+#For dCT, subtract the avg ACTB CT from the avg ICP27 CT
+
+#For ddCT, subtract the dCT from 24. We are using CT of 24 as "zero" since that is approx the value for all the Mock infections
+
+#For fold change, do 2^ddCT
+
+#fix the factors for the Time variable
+
+
+dCT<-dCT %>%
+  mutate(dCT = ICP27AvgCT-ACTBAvgCT)%>%
+  mutate(ddCT = 24-dCT)%>%
+  mutate(FoldChange = 2^ddCT)%>%
+  filter(Treatment !="Mock")%>%
+  arrange(Sample)
+
+dCT$Time<-factor(dCT$Time,levels = c("3","8","24"))
+
+dCT$TissueID<-factor(dCT$TissueID, levels = c("1","4"))
+
+ggplot(dCT,(aes(x = Time, y = FoldChange)))+
+  geom_point(aes(color=Treatment),size=4.5)+
+  geom_line(aes(group = Treatment,color=Treatment))+
+  scale_y_log10()+
+theme(axis.text = element_text(size = 12),
+      axis.title.x = element_text(size=12), 
+    axis.title.y = element_text(size=12),
+    strip.text = element_text(size =12))+
+facet_wrap(~TissueID)
+  
+  ##### DANGER: I have different results than Erik's plot, looks like the labels are mixed up but I don't know what his plate layout looked like or how he assigned the raw results back to the sample names.I rechecked my manual matching of the samples to their well positions below. 
+#Update: I found a mistake in his plotting, labels were matched with the wrong data.
+#########################################################
+  
+  
+
+#some sanity checking using EL's formatted results: He took the raw results and formatted them like this:
+  
+ELavg<-read.csv("sanity check EL avgs.csv")
+#Rows B,D,F and H were where the "rep2" samples where, but he left those out of the column and just put the 2 reps side by side
+  
+#He then had a table for each Gene that included avgs of the replicates (so same values as in ELavg)AND the Sample.In order to make the plate layout that I passed to plateR, I manually lined up the avgs to match well position to Sample name I may have done that wrong though so I am trying again here.
+
+  #this is the Beta actin data
+ELactbSampleAvg<-read.csv("sanity check EL ACTB avg and samples.csv")
+
+#For some reason some values have 4 decimal places and others have 3. The talbe I am comparing with has 3 so I will round all to three in this one. 
+
+ELactbSampleAvg<-ELactbSampleAvg%>%
+  mutate(ACTBAvg = round (ACTBAvg, digits = 3))
+
+
+
+#merge the "beta actin avg + sample name"(ELactbSampleAVg) data with the "both genes avg" (ELavg) data to get the samples names to line up with the wells
+
+
+ACTBmerge<-merge(ELavg, ELactbSampleAvg, by.x = "avg", by.y = "ACTBAvg")
+
+#this gave 17 entries, which is all of the samples. OK!
+
+#Now change the well positions to have the "A01" format instead of "A1" format so I can sort them easily.
+
+
+ACTBmerge<-ACTBmerge %>%
+  mutate(Row = str_extract(Well.Position,"[A-G]"))%>%
+  mutate(Col = str_extract(Well.Position,"\\d.|\\d"))
+
+ACTBmerge$Col<-as.numeric(ACTBmerge$Col)
+
+
+ACTBmerge<-ACTBmerge%>%
+  mutate(Row = ifelse(ACTBmerge$Col<10,
+                                 paste(Row,0,sep=""),Row))%>%
+mutate(Well = paste(Row,Col,sep=""))%>%
+select(Well,Sample)%>% #Just keep these cols for comparison
+arrange(Well)
+
+
+#now merge with dat, the df made by plateR combining the raw data and my manually generated plate layout.
+
+mergeCheck<-merge(dat,ACTBmerge,by.x = "Wells",by.y = "Well")
+
+test1<-mergeCheck$Sample.x==mergeCheck$Sample.y
+## all TRUE
+
+
+##########Repeat all this stuff with the ICP27 data######
+
+
+ELICP27SampleAvg<-read.csv("sanity check EL ICP27 avg and samples.csv")
+
+ELICP27SampleAvg<-ELICP27SampleAvg %>%
+  mutate(ICP27Avg = round(ICP27Avg, digits= 3))
+
+
+ICP27merge<-merge(ELavg, ELICP27SampleAvg, by.x = "avg", by.y = "ICP27Avg")
+
+
+#this gave 17 entries, which is all of the samples. OK!
+
+#Now change the well positions to have the "A01" format instead of "A1" format so I can sort them easily.
+
+
+ICP27merge<-ICP27merge %>%
+  mutate(Row = str_extract(Well.Position,"[A-G]"))%>%
+  mutate(Col = str_extract(Well.Position,"\\d.|\\d"))
+
+ICP27merge$Col<-as.numeric(ICP27merge$Col)
+
+
+ICP27merge<-ICP27merge%>%
+  mutate(Row = ifelse(ICP27merge$Col<10,
+                                 paste(Row,0,sep=""),Row))%>%
+mutate(Well = paste(Row,Col,sep=""))%>%
+select(Well,Sample)%>% #Just keep these cols for comparison
+arrange(Well)
+
+
+#now merge with dat, the df made by plateR combining the raw data and my manually generated plate layout.
+
+mergeCheck<-merge(dat,ICP27merge,by.x = "Wells",by.y = "Well")
+
+test2<-mergeCheck$Sample.x==mergeCheck$Sample.y
+#all TRUE
+
+```
+#Explant Results
+
+For these samples , Erik did 2 replicates of each sample but no housekeeping gene since the explants were not size-standardized (so we don't know if more housekeeper =  more expression, or, if that sample just had a bigger explant).
+
+
+
+
+Two samples had undetermined values. Maybe the concentrations were too low? For these, I used the value of the other replicate instead of the average of the two.
+
+```{r, echo=FALSE, warnings = FALSE}
+##Now I'm reading in the explant data. 
+
+#reading in a copy of the CT data from the spreadsheet that EL gave me. The file from him is called "2016-03-07 florian lab plate 1 explants.xls" I don't have the plate layout for this either but the CTs are aligned with the annotation data so I am guessing that the rows are sorted appropriately.
+
+  
+explantCT<-read.csv("explant CTs only.csv")
+  
+rep1<-explantCT%>%
+  select(-rep2)
+
+names(rep1)[10]<-"CT"
+
+
+rep2<-explantCT%>%
+  select(-rep1)
+
+names(rep2)[10]<-"CT"
+
+longCT<-rbind(rep1,rep2)
+
+explantUndet<-longCT%>%
+  filter(CT == "Undetermined")%>%
+  select(TissueID, Timepoint,Treatment,newNanodrop)
+
+pander(explantUndet)
+
+
+
+
+```
+
+
+
+
+
+```{r, echo=FALSE, warnings = FALSE}
+
+longCT<-filter(longCT,CT!="Undetermined")
+
+longCT$CT<-as.numeric(as.character(longCT$CT))
+
+#get the avg of the reps
+avg_dCT_FC_longCT<-longCT%>%
+  arrange(Sample.ID)%>%
+  group_by(TissueID, Treatment, Timepoint, Sample.ID,Well.Position)%>%
+  summarise(AvgCT = mean(CT))%>%
+  ungroup()%>%
+  arrange(Well.Position)%>%
+  mutate(dCT = 40-AvgCT)%>%
+  mutate(FoldChange = 2^dCT)
+
+names(avg_dCT_FC_longCT)[3]<-"Time"
+
+avg_dCT_FC_longCT$Time<-factor(avg_dCT_FC_longCT$Time, levels = c("3","8","24"))
+
+avg_dCT_FC_longCT$TissueID<-as.factor(avg_dCT_FC_longCT$TissueID)
+
+
+#plot it like it's hot
+
+
+ggplot(avg_dCT_FC_longCT,(aes(x = Time, y =log10(FoldChange))))+
+  geom_point(aes(color = Treatment),size=3)
+  
