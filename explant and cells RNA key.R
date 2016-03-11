@@ -54,6 +54,8 @@ explant_RNA_for_qPCR<-merge(nanodropExplant,complete, by = "ID")
 write.table(explant_RNA_for_qPCR, "explant_RNA_for_qPCR.txt",row.names=FALSE,
             sep = "\t")
 
+
+save(explant_RNA_for_qPCR, file= "explant_RNA_for_qPCR.Rdata")
 ### CELLS DATA
 
 #now reading in the cells phenoData that I used for MA
@@ -111,6 +113,8 @@ CellsComplete<-CellsComplete %>%
   mutate(TubeLabel = str_replace(TubeLabel, "SD90","SD"))%>%
   mutate(TubeLabel = str_replace(TubeLabel, "V186","186"))
 
+
+
 write.table(CellsComplete, file="complete vaginal cells RNA log.txt", sep="\t",
             row.names=FALSE)
 
@@ -134,3 +138,4 @@ Cells_RNA_for_qPCR<-merge(CellsComplete, nanodropCells, by = "TubeLabel")
 write.table(Cells_RNA_for_qPCR, file="Cells_RNA_for_qPCR.txt", sep="\t",
             row.names=FALSE)
 
+save(Cells_RNA_for_qPCR,file="Cells_RNA_for_qPCR.Rdata")
