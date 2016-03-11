@@ -1,8 +1,9 @@
 ---
 title: "qPCR of vaginal explant and epithelial cell RNA"
-author: "Claire Levy"
-date: "March 9, 2016"
-output: html_document
+date: "March 11, 2016"
+output:
+  md_document:
+    variant: markdown_github
 ---
 
 These data are from qPCR experiments done by Erik Layton(Corey/Zhu lab) using the same RNA that was used on the epithelial and explant microarray experiments. 
@@ -15,11 +16,8 @@ Caveats for epithelial cell qPCR data:
 
 We weren't able to find the RNA from the epithelial cells donor 3
 
-We excluded the sample that was "3E" on the microarray (HVE 4 ,24hr, V186) because we wouldnt be able to compare it to the microarray results (it was excluded because of a possible pipetting error).
+We excluded the sample that was "3E" on the microarray (HVE 4, 24hr, V186) because we wouldnt be able to compare it to the microarray results (it was excluded because of a possible pipetting error).
 
-Erik plotted the data and his plot seems to show that the two _different viruses_ have almost the exact same trajectory in the _different donors_. I.e. Donor1 V186 looks the same as Donor 4 SD90 and vice versa. He suggested that this was maybe a labeling error. I did the analysis starting from the raw data and got a less unusal result: Each virus looks about the same in the different donor.
-
-Conclusion: There may have been an error in matching the samples to the sample wells, I can double check with Erik.
 
 ```{r, echo=FALSE,warning=FALSE, message= FALSE}
 
@@ -69,13 +67,22 @@ undet<-dat_ann %>%
   
 pander(undet)
 ```
+Analysis:
 
-This is a plot of the fold change in the ICP27 gene on a log10 scale. Each panel shows data from a different tissue donor. The missing sample on the right panel is the one we left out intentionally.To get the ddCT,we subtracted the dCT from 24, since that was the approx CT for the all the Mock infections.
+* For both genes, calculate the average of the sample replicates
+
+* dCT = Average ICP27 CT - Average ACTB CT 
+
+* ddCT = Treatment dCT - Average Mock dCT
+ 
+* Amount of target normalized to housekeeper and relative to Mock = 2^-ddCT
+
+This is a plot of the fold change in the ICP27 gene on a log10 scale. Each panel shows data from a different tissue donor. The missing sample on the right panel is the one we left out intentionally. 
 
 ```{r, echo=FALSE, warnings = FALSE}
 ### CALCULATIONS
 #Steps for analysis:
-
+#http://www3.appliedbiosystems.com/cms/groups/mcb_support/documents/generaldocuments/cms_040980.pdf
 
 #remove the undetermined
 
@@ -109,31 +116,43 @@ ICP27avg<-avg_dat_ann%>%
  
 
 #add the ACTB data onto the side of the ICP27 data to prepare for subracting
-dCT<-cbind(ICP27avg, ACTBavg$AvgCT)
+analysis<-cbind(ICP27avg, ACTBavg$AvgCT)
 
-names(dCT)[5:6]<-c("ICP27AvgCT","ACTBAvgCT")
+names(analysis)[5:6]<-c("ICP27AvgCT","ACTBAvgCT")
 
-#For dCT, subtract the avg ACTB CT from the avg ICP27 CT
+#For analysis, subtract the avg ACTB CT from the avg ICP27 CT
 
-#For ddCT, subtract the dCT from 24. We are using CT of 24 as "zero" since that is approx the value for all the Mock infections
+#For ddCT, subtract the avg MOCK dCT from each sample dCT
 
-#For fold change, do 2^ddCT
+#For fold change, do 2^-ddCT
 
 #fix the factors for the Time variable
 
 
-dCT<-dCT %>%
-  mutate(dCT = ICP27AvgCT-ACTBAvgCT)%>%
-  mutate(ddCT = 24-dCT)%>%
-  mutate(FoldChange = 2^ddCT)%>%
+
+analysis<-analysis %>%
+  mutate(dCT = ICP27AvgCT-ACTBAvgCT)
+
+#get the mean of the mock dCTs
+meanMock<-analysis%>%
+  filter(Treatment=="Mock")%>%
+  summarise(mean = mean(dCT))
+
+
+
+#calculate the ddCT by subtracting the dCT of the MOCK from the dCT of the other samples
+
+analysis<-analysis %>%
+  mutate(ddCT = dCT-meanMock$mean)%>%
+  mutate(Target = 2^-ddCT)%>%
   filter(Treatment !="Mock")%>%
   arrange(Sample)
 
-dCT$Time<-factor(dCT$Time,levels = c("3","8","24"))
+analysis$Time<-factor(analysis$Time,levels = c("3","8","24"))
 
-dCT$TissueID<-factor(dCT$TissueID, levels = c("1","4"))
+analysis$TissueID<-factor(analysis$TissueID, levels = c("1","4"))
 
-ggplot(dCT,(aes(x = Time, y = FoldChange)))+
+ggplot(analysis,(aes(x = Time, y = Target)))+
   geom_point(aes(color=Treatment),size=4.5)+
   geom_line(aes(group = Treatment,color=Treatment))+
   scale_y_log10()+
@@ -147,103 +166,22 @@ facet_wrap(~TissueID)
 #Update: I found a mistake in his plotting, labels were matched with the wrong data.
 #########################################################
   
-  
-
-#some sanity checking using EL's formatted results: He took the raw results and formatted them like this:
-  
-ELavg<-read.csv("sanity check EL avgs.csv")
-#Rows B,D,F and H were where the "rep2" samples where, but he left those out of the column and just put the 2 reps side by side
-  
-#He then had a table for each Gene that included avgs of the replicates (so same values as in ELavg)AND the Sample.In order to make the plate layout that I passed to plateR, I manually lined up the avgs to match well position to Sample name I may have done that wrong though so I am trying again here.
-
-  #this is the Beta actin data
-ELactbSampleAvg<-read.csv("sanity check EL ACTB avg and samples.csv")
-
-#For some reason some values have 4 decimal places and others have 3. The talbe I am comparing with has 3 so I will round all to three in this one. 
-
-ELactbSampleAvg<-ELactbSampleAvg%>%
-  mutate(ACTBAvg = round (ACTBAvg, digits = 3))
-
-
-
-#merge the "beta actin avg + sample name"(ELactbSampleAVg) data with the "both genes avg" (ELavg) data to get the samples names to line up with the wells
-
-
-ACTBmerge<-merge(ELavg, ELactbSampleAvg, by.x = "avg", by.y = "ACTBAvg")
-
-#this gave 17 entries, which is all of the samples. OK!
-
-#Now change the well positions to have the "A01" format instead of "A1" format so I can sort them easily.
-
-
-ACTBmerge<-ACTBmerge %>%
-  mutate(Row = str_extract(Well.Position,"[A-G]"))%>%
-  mutate(Col = str_extract(Well.Position,"\\d.|\\d"))
-
-ACTBmerge$Col<-as.numeric(ACTBmerge$Col)
-
-
-ACTBmerge<-ACTBmerge%>%
-  mutate(Row = ifelse(ACTBmerge$Col<10,
-                                 paste(Row,0,sep=""),Row))%>%
-mutate(Well = paste(Row,Col,sep=""))%>%
-select(Well,Sample)%>% #Just keep these cols for comparison
-arrange(Well)
-
-
-#now merge with dat, the df made by plateR combining the raw data and my manually generated plate layout.
-
-mergeCheck<-merge(dat,ACTBmerge,by.x = "Wells",by.y = "Well")
-
-test1<-mergeCheck$Sample.x==mergeCheck$Sample.y
-## all TRUE
-
-
-##########Repeat all this stuff with the ICP27 data######
-
-
-ELICP27SampleAvg<-read.csv("sanity check EL ICP27 avg and samples.csv")
-
-ELICP27SampleAvg<-ELICP27SampleAvg %>%
-  mutate(ICP27Avg = round(ICP27Avg, digits= 3))
-
-
-ICP27merge<-merge(ELavg, ELICP27SampleAvg, by.x = "avg", by.y = "ICP27Avg")
-
-
-#this gave 17 entries, which is all of the samples. OK!
-
-#Now change the well positions to have the "A01" format instead of "A1" format so I can sort them easily.
-
-
-ICP27merge<-ICP27merge %>%
-  mutate(Row = str_extract(Well.Position,"[A-G]"))%>%
-  mutate(Col = str_extract(Well.Position,"\\d.|\\d"))
-
-ICP27merge$Col<-as.numeric(ICP27merge$Col)
-
-
-ICP27merge<-ICP27merge%>%
-  mutate(Row = ifelse(ICP27merge$Col<10,
-                                 paste(Row,0,sep=""),Row))%>%
-mutate(Well = paste(Row,Col,sep=""))%>%
-select(Well,Sample)%>% #Just keep these cols for comparison
-arrange(Well)
-
-
-#now merge with dat, the df made by plateR combining the raw data and my manually generated plate layout.
-
-mergeCheck<-merge(dat,ICP27merge,by.x = "Wells",by.y = "Well")
-
-test2<-mergeCheck$Sample.x==mergeCheck$Sample.y
-#all TRUE
-
 ```
-#Explant Results
 
-For these samples , Erik did 2 replicates of each sample but no housekeeping gene since the explants were not size-standardized (so we don't know if more housekeeper =  more expression, or, if that sample just had a bigger explant).
+##Conclusions
+
+* Similar patterns between the two donors.
+
+* Concentrations of ICP27 increased over time in both V186 and SD90 infected epithelial cell samples. 
+
+* SD90 started out lower (relative to housekeeper and Mock), but both reached approximately the same concentration at 8 and 24hr.
 
 
+
+
+##Explant Results
+
+For these samples , Erik did 2 replicates of each sample but no housekeeping gene and we didn't use the Mock samples since the explants were not size-standardized (so we don't know if more housekeeper/Mock =  more expression, or, if that sample just had a bigger explant).
 
 
 Two samples had undetermined values. Maybe the concentrations were too low? For these, I used the value of the other replicate instead of the average of the two.
@@ -267,49 +205,76 @@ rep2<-explantCT%>%
 
 names(rep2)[10]<-"CT"
 
-longCT<-rbind(rep1,rep2)
+explantAnalysis<-rbind(rep1,rep2)
 
-explantUndet<-longCT%>%
+explantUndet<-explantAnalysis%>%
   filter(CT == "Undetermined")%>%
   select(TissueID, Timepoint,Treatment,newNanodrop)
 
 pander(explantUndet)
 
-
-
-
 ```
 
+Method for analysis of explant samples: 
+
+We did not use a housekeeper or the Mock as controls since the explants weren't size standardized.
+
+* Average the sample replicates
+
+* dCT = 40 - Average CT (because CT of 40 = zero amplification)
 
 
-
+Here are plots of dCT for each donor and then all together
 
 ```{r, echo=FALSE, warnings = FALSE}
 
-longCT<-filter(longCT,CT!="Undetermined")
+explantAnalysis<-filter(explantAnalysis,CT!="Undetermined")
 
-longCT$CT<-as.numeric(as.character(longCT$CT))
+explantAnalysis$CT<-as.numeric(as.character(explantAnalysis$CT))
 
 #get the avg of the reps
-avg_dCT_FC_longCT<-longCT%>%
+avg_dCT_explantAnalysis<-explantAnalysis%>%
   arrange(Sample.ID)%>%
   group_by(TissueID, Treatment, Timepoint, Sample.ID,Well.Position)%>%
   summarise(AvgCT = mean(CT))%>%
   ungroup()%>%
   arrange(Well.Position)%>%
-  mutate(dCT = 40-AvgCT)%>%
-  mutate(FoldChange = 2^dCT)
+  mutate(dCT = 40-AvgCT) #40 = "zero" because it is the max CT you can get
 
-names(avg_dCT_FC_longCT)[3]<-"Time"
 
-avg_dCT_FC_longCT$Time<-factor(avg_dCT_FC_longCT$Time, levels = c("3","8","24"))
+names(avg_dCT_explantAnalysis)[3]<-"Time"
 
-avg_dCT_FC_longCT$TissueID<-as.factor(avg_dCT_FC_longCT$TissueID)
+avg_dCT_explantAnalysis$Time<-factor(avg_dCT_explantAnalysis$Time, levels = c("3","8","24"))
+
+avg_dCT_explantAnalysis$TissueID<-as.factor(avg_dCT_explantAnalysis$TissueID)
 
 
 #plot it like it's hot
+#by donor
+ggplot(avg_dCT_explantAnalysis,(aes(x = Time, y = dCT)))+
+  geom_point(aes(),size=4.5)+
+  geom_line(aes(group = Treatment))+
+theme(axis.text = element_text(size = 12),
+      axis.title.x = element_text(size=12), 
+    axis.title.y = element_text(size=12),
+    strip.text = element_text(size =12))+
+facet_grid(TissueID~Treatment)
 
 
-ggplot(avg_dCT_FC_longCT,(aes(x = Time, y =log10(FoldChange))))+
-  geom_point(aes(color = Treatment),size=3)
-  
+#all together
+ggplot(avg_dCT_explantAnalysis,(aes(x = Time, y = dCT)))+
+  geom_point(aes(),size=3, alpha = .4)+
+  stat_summary(fun.y = mean, geom="point", size = 5.5)+
+theme(axis.text = element_text(size = 12),
+      axis.title.x = element_text(size=12), 
+    axis.title.y = element_text(size=12),
+    strip.text = element_text(size =12))+
+  facet_wrap(~Treatment)
+```
+
+
+##Conclusion
+
+* In 6 of 7 donors, concentrations of ICP27 were either the same for both treatments or higher for V186 infected explants.
+
+* Erik said that based on his experience, he would say that SD90 did actually infect the explants.
