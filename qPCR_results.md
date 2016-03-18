@@ -65,7 +65,7 @@ Analysis:
 
 -   Amount of target normalized to housekeeper and relative to Mock = 2^-ddCT
 
-This is a plot of the fold change in the ICP27 gene on a log10 scale. Each panel shows data from a different tissue donor. The missing sample on the right panel is the one we left out intentionally.
+This is a plot of the amount of the ICP27 gene normalized to the housekeeper and relative to Mock. Each panel shows data from a different tissue donor. The missing sample on the right panel is the one we left out intentionally.
 
 ![](qPCR_results_files/figure-markdown_github/unnamed-chunk-3-1.png)
 
