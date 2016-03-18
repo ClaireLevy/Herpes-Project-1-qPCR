@@ -10,6 +10,10 @@ These data are from qPCR experiments done by Erik Layton(Corey/Zhu lab) using th
 
 We chose one HSV2 gene (ICP27, Immediate Early) and used beta actin (ACTB) as a housekeeper for the epithelial cell assay. The assays use a FAM dye label and a non-fluorescent quencher.
 
+For both cells and explant experiments, samples were standardized by volume:
+
+* Took same volume of RNA from each sample to make cDNA, then same volume of resulting cDNA went into the qPCR reaction. 
+
 ##Epithelial Cell Results
 
 Caveats for epithelial cell qPCR data:
@@ -77,7 +81,7 @@ Analysis:
  
 * Amount of target normalized to housekeeper and relative to Mock = 2^-ddCT
 
-This is a plot of the amount of the  ICP27 gene normalized to the housekeeper and relative to Mock. Each panel shows data from a different tissue donor. The missing sample on the right panel is the one we left out intentionally. 
+This is a plot of the amount of the ICP27 gene normalized to the housekeeper and relative to Mock (log10 scale). Each panel shows data from a different tissue donor. The missing sample on the right panel is the one we left out intentionally. 
 
 ```{r, echo=FALSE, warnings = FALSE}
 ### CALCULATIONS
