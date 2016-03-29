@@ -1,19 +1,21 @@
-These data are from qPCR experiments done by Erik Layton(Corey/Zhu lab) using the same RNA that was used on the epithelial and explant microarray experiments.
+These data are from qPCR experiments done by Erik Layton (Corey/Zhu lab) using the same RNA that was used on the epithelial and explant microarray experiments.
 
-We chose one HSV2 gene (ICP27, Immediate Early) and used beta actin (ACTB) as a housekeeper for the epithelial cell assay. The assays use a FAM dye label and a non-fluorescent quencher.
+We chose one HSV2 gene (ICP27, Immediate Early) and used beta actin (ACTB) as a housekeeper for the epithelial cell assay. The assays use a FAM dye label and a non-fluorescent quencher. Samples were assayed in replicate.
 
-For both cells and explant experiments, samples were standardized by volume:
+For both cells and explant experiments, samples had different concentrations but were standardized by volume:
 
--   Took same volume of RNA from each sample to make cDNA, then same volume of resulting cDNA went into the qPCR reaction.
+-   The same volume of RNA from each sample was used make cDNA, then equal volumes of the resulting cDNA went into the qPCR reaction.
 
 Epithelial Cell Results
 -----------------------
 
 Caveats for epithelial cell qPCR data:
 
-We weren't able to find the RNA from the epithelial cells donor 3
+-   We weren't able to find the RNA from the epithelial cells donor 3
 
-We excluded the sample that was "3E" on the microarray (HVE 4, 24hr, V186) because we wouldnt be able to compare it to the microarray results (it was excluded because of a possible pipetting error).
+-   We excluded the sample that was "3E" on the microarray (HVE 4, 24hr, V186) because we wouldnt be able to compare it to the microarray results (it was excluded because of a possible pipetting error).
+
+-   I don't think that Erik did a validation for this experiment to show that the efficiencies of the target and refernce were approximately equal, but I assume that they have done this in their lab for other assays using these genes.
 
 These replicates got "Undetermined" results from the qPCR machine, but all were Mock samples and the concentration looks ok.
 
@@ -59,15 +61,15 @@ These replicates got "Undetermined" results from the qPCR machine, but all were 
 </tbody>
 </table>
 
-Analysis:
+Analysis using the Relative (ddCT) method:
 
--   For both genes, calculate the average of the sample replicates
+-   For both genes, calculate the average of the sample replicates.
 
 -   dCT = Average ICP27 CT - Average ACTB CT
 
 -   ddCT = Treatment dCT - Average Mock dCT
 
--   Amount of target normalized to housekeeper and relative to Mock = 2^-ddCT
+-   Amount of Target gene normalized to housekeeper, and relative to Mock sample = 2^-ddCT
 
 This is a plot of the amount of the ICP27 gene normalized to the housekeeper and relative to Mock (log10 scale). Each panel shows data from a different tissue donor. The missing sample on the right panel is the one we left out intentionally.
 
@@ -80,12 +82,14 @@ Conclusions
 
 -   Concentrations of ICP27 increased over time in both V186 and SD90 infected epithelial cell samples.
 
--   SD90 started out lower (relative to housekeeper and Mock), but both reached approximately the same concentration at 8 and 24hr.
+-   At 3 and 8 hours, there was less ICP27 RNA detected in the samples treated with SD90 than those treated with V186.
+
+-   In the patient where we had data for both treatments at 24hrs, the amount of ICP27 detected was very similar
 
 Explant Results
 ---------------
 
-For these samples , Erik did 2 replicates of each sample but no housekeeping gene and we didn't use the Mock samples since the explants were not size-standardized (so we don't know if more housekeeper/Mock = more expression, or, if that sample just had a bigger explant).
+For these samples, Erik did not use a housekeeping gene and we didn't use the Mock samples since the explants were not size-standardized. All explants were exposed to the same amount of virus, but if an explant used for the Mock treatment was bigger than a "treated" explant, and therefore had more cellular RNA, the relative method of analysis would be inaccurate.
 
 Two samples had undetermined values. Maybe the concentrations were too low? For these, I used the value of the other replicate instead of the average of the two.
 
@@ -99,22 +103,22 @@ Two samples had undetermined values. Maybe the concentrations were too low? For 
 <thead>
 <tr class="header">
 <th align="center">TissueID</th>
-<th align="center">Timepoint</th>
 <th align="center">Treatment</th>
+<th align="center">Timepoint</th>
 <th align="center">newNanodrop</th>
 </tr>
 </thead>
 <tbody>
 <tr class="odd">
 <td align="center">319</td>
-<td align="center">3</td>
 <td align="center">SD90</td>
+<td align="center">3</td>
 <td align="center">4.89</td>
 </tr>
 <tr class="even">
 <td align="center">324</td>
-<td align="center">8</td>
 <td align="center">SD90</td>
+<td align="center">8</td>
 <td align="center">5.47</td>
 </tr>
 </tbody>
@@ -122,19 +126,21 @@ Two samples had undetermined values. Maybe the concentrations were too low? For 
 
 Method for analysis of explant samples:
 
-We did not use a housekeeper or the Mock as controls since the explants weren't size standardized.
-
 -   Average the sample replicates
 
 -   dCT = 40 - Average CT (because CT of 40 = zero amplification)
 
-Here are plots of dCT for each donor and then all together
+-   Fold Change = 2^dCT
+
+Here are plots of fold change for each donor and then all together.
 
 ![](qPCR_results_files/figure-markdown_github/unnamed-chunk-5-1.png) ![](qPCR_results_files/figure-markdown_github/unnamed-chunk-5-2.png)
 
-Conclusion
-----------
+Conclusions
+-----------
 
--   In 6 of 7 donors, concentrations of ICP27 were either the same for both treatments or higher for V186 infected explants.
+Erik's remarks on the data:
 
--   Erik said that based on his experience, he would say that SD90 did actually infect the explants.
+-   SD90: "What you need to note is that the starting point is very different for each sample.You can't draw a whole lot of conclusions for this, because while you may have added the same amount of virus to each one, the MOI of each sample differed a lot."
+
+-   V186: "You guys were worried that your virus didn't infect. It did. It also grew, I can't say how much without some better controls, I'm confident saying that it did proliferate inside the biopsies."

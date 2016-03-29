@@ -6,21 +6,23 @@ output:
     variant: markdown_github
 ---
 
-These data are from qPCR experiments done by Erik Layton(Corey/Zhu lab) using the same RNA that was used on the epithelial and explant microarray experiments. 
+These data are from qPCR experiments done by Erik Layton (Corey/Zhu lab) using the same RNA that was used on the epithelial and explant microarray experiments. 
 
-We chose one HSV2 gene (ICP27, Immediate Early) and used beta actin (ACTB) as a housekeeper for the epithelial cell assay. The assays use a FAM dye label and a non-fluorescent quencher.
+We chose one HSV2 gene (ICP27, Immediate Early) and used beta actin (ACTB) as a housekeeper for the epithelial cell assay. The assays use a FAM dye label and a non-fluorescent quencher. Samples were assayed in replicate.
 
-For both cells and explant experiments, samples were standardized by volume:
+For both cells and explant experiments, samples had different concentrations but were standardized by volume:
 
-* Took same volume of RNA from each sample to make cDNA, then same volume of resulting cDNA went into the qPCR reaction. 
+* The same volume of RNA from each sample was used make cDNA, then equal volumes of the resulting cDNA went into the qPCR reaction. 
 
 ##Epithelial Cell Results
 
 Caveats for epithelial cell qPCR data:
 
-We weren't able to find the RNA from the epithelial cells donor 3
+* We weren't able to find the RNA from the epithelial cells donor 3
 
-We excluded the sample that was "3E" on the microarray (HVE 4, 24hr, V186) because we wouldnt be able to compare it to the microarray results (it was excluded because of a possible pipetting error).
+* We excluded the sample that was "3E" on the microarray (HVE 4, 24hr, V186) because we wouldnt be able to compare it to the microarray results (it was excluded because of a possible pipetting error).
+
+* I don't think that Erik did a validation for this experiment to show that the efficiencies of the target and refernce were approximately equal, but I assume that they have done this in their lab for other assays using these genes.
 
 
 ```{r, echo=FALSE,warning=FALSE, message= FALSE}
@@ -32,24 +34,23 @@ library(pander)
 library(reshape2)
 library(ggplot2)
 
-#I made this plate layout by 
 
 #this is just the CTs and well positions
 #from file "2016-03-07 florian lab cell culture.xlsx"
 
-results<-read.csv("cells CT and well only.csv")
+results<-read.csv("input data/cells CT and well only.csv")
 
 #Adding in the layout that I made manually from Erik's data 
 #from file "2016-03-07 florian lab cell culture.xlsx"
 
-dat<-add_plate(file="cells qPCR plate layout.csv",results, "Wells")
-#There were some wells where I didn't know what the contents were and they were all undetermined. I think they are controls but will check with EL. I Put unknown for the Gene and and sample in those wells and will remove them here.
+dat<-add_plate(file ="input data/cells qPCR plate layout.csv",results, "Wells")
+#There were some wells where I didn't know what the contents were and they were all undetermined. Confirmed with EL that they are controls. I Put unknown for the Gene and and sample in those wells and will remove them here.
 
 dat<-filter(dat, Sample != "unknown")
 
 
-#load the file will more annotation data for the results( other than sample name)
-load("Cells_RNA_for_qPCR.Rdata")
+#load the file with more annotation data for the results( other than sample name)
+load("input data/Cells_RNA_for_qPCR.Rdata")
 
 #merge in with results by the common columns
 dat_ann<-merge(dat,Cells_RNA_for_qPCR, by.x = "Sample", by.y = "TubeLabel")
@@ -71,15 +72,15 @@ undet<-dat_ann %>%
   
 pander(undet)
 ```
-Analysis:
+Analysis using the Relative (ddCT) method:
 
-* For both genes, calculate the average of the sample replicates
+* For both genes, calculate the average of the sample replicates.
 
 * dCT = Average ICP27 CT - Average ACTB CT 
 
 * ddCT = Treatment dCT - Average Mock dCT
  
-* Amount of target normalized to housekeeper and relative to Mock = 2^-ddCT
+* Amount of Target gene normalized to housekeeper, and relative to Mock sample = 2^-ddCT
 
 This is a plot of the amount of the ICP27 gene normalized to the housekeeper and relative to Mock (log10 scale). Each panel shows data from a different tissue donor. The missing sample on the right panel is the one we left out intentionally. 
 
@@ -87,6 +88,9 @@ This is a plot of the amount of the ICP27 gene normalized to the housekeeper and
 ### CALCULATIONS
 #Steps for analysis:
 #http://www3.appliedbiosystems.com/cms/groups/mcb_support/documents/generaldocuments/cms_040980.pdf
+
+
+#More here: https://www.thermofisher.com/us/en/home/life-science/pcr/real-time-pcr/qpcr-education/absolute-vs-relative-quantification-for-qpcr.html
 
 #remove the undetermined
 
@@ -120,9 +124,9 @@ ICP27avg<-avg_dat_ann%>%
  
 
 #add the ACTB data onto the side of the ICP27 data to prepare for subracting
-analysis<-cbind(ICP27avg, ACTBavg$AvgCT)
+epiAnalysis<-cbind(ICP27avg, ACTBavg$AvgCT)
 
-names(analysis)[5:6]<-c("ICP27AvgCT","ACTBAvgCT")
+names(epiAnalysis)[5:6]<-c("ICP27AvgCT","ACTBAvgCT")
 
 #For analysis, subtract the avg ACTB CT from the avg ICP27 CT
 
@@ -134,11 +138,11 @@ names(analysis)[5:6]<-c("ICP27AvgCT","ACTBAvgCT")
 
 
 
-analysis<-analysis %>%
+epiAnalysis<-epiAnalysis %>%
   mutate(dCT = ICP27AvgCT-ACTBAvgCT)
 
 #get the mean of the mock dCTs
-meanMock<-analysis%>%
+meanMock<-epiAnalysis%>%
   filter(Treatment=="Mock")%>%
   summarise(mean = mean(dCT))
 
@@ -146,20 +150,21 @@ meanMock<-analysis%>%
 
 #calculate the ddCT by subtracting the dCT of the MOCK from the dCT of the other samples
 
-analysis<-analysis %>%
+epiAnalysis<-epiAnalysis %>%
   mutate(ddCT = dCT-meanMock$mean)%>%
-  mutate(Target = 2^-ddCT)%>%
+  mutate(TargetRNA = 2^-ddCT)%>%
   filter(Treatment !="Mock")%>%
   arrange(Sample)
 
-analysis$Time<-factor(analysis$Time,levels = c("3","8","24"))
+epiAnalysis$Time<-factor(epiAnalysis$Time,levels = c("3","8","24"))
 
-analysis$TissueID<-factor(analysis$TissueID, levels = c("1","4"))
+epiAnalysis$TissueID<-factor(epiAnalysis$TissueID, levels = c("1","4"))
 
-ggplot(analysis,(aes(x = Time, y = Target)))+
+ggplot(epiAnalysis,(aes(x = Time, y = (TargetRNA))))+
   geom_point(aes(color=Treatment),size=4.5)+
   geom_line(aes(group = Treatment,color=Treatment))+
   scale_y_log10()+
+  labs(y = "ICP27 relative to Mock and ACTB")+
 theme(axis.text = element_text(size = 12),
       axis.title.x = element_text(size=12), 
     axis.title.y = element_text(size=12),
@@ -169,7 +174,18 @@ facet_wrap(~TissueID)
   ##### DANGER: I have different results than Erik's plot, looks like the labels are mixed up but I don't know what his plate layout looked like or how he assigned the raw results back to the sample names.I rechecked my manual matching of the samples to their well positions below. 
 #Update: I found a mistake in his plotting, labels were matched with the wrong data.
 #########################################################
-  
+
+#here is a table of the results
+
+# epiAnalysisShort<-epiAnalysis %>%
+#   select(TissueID,Treatment, Time,TargetRNA)%>%
+#   arrange(TissueID, Time, Treatment)%>%
+#   mutate(TargetRNA = format(TargetRNA, digits = 3))
+# 
+# 
+# pander(epiAnalysisShort)
+
+
 ```
 
 ##Conclusions
@@ -178,14 +194,16 @@ facet_wrap(~TissueID)
 
 * Concentrations of ICP27 increased over time in both V186 and SD90 infected epithelial cell samples. 
 
-* SD90 started out lower (relative to housekeeper and Mock), but both reached approximately the same concentration at 8 and 24hr.
+* At 3 and 8 hours, there was less ICP27 RNA detected in the samples treated with SD90 than those treated with V186. 
+
+* In the patient where we had data for both treatments at 24hrs, the amount of ICP27 detected was very similar
 
 
 
 
 ##Explant Results
 
-For these samples , Erik did 2 replicates of each sample but no housekeeping gene and we didn't use the Mock samples since the explants were not size-standardized (so we don't know if more housekeeper/Mock =  more expression, or, if that sample just had a bigger explant).
+For these samples, Erik did not use a housekeeping gene and we didn't use the Mock samples since the explants were not size-standardized. All explants were exposed to the same amount of virus, but if  an explant used for the Mock treatment was bigger than a "treated" explant, and therefore had more cellular RNA, the relative method of analysis would be inaccurate.
 
 
 Two samples had undetermined values. Maybe the concentrations were too low? For these, I used the value of the other replicate instead of the average of the two.
@@ -196,7 +214,7 @@ Two samples had undetermined values. Maybe the concentrations were too low? For 
 #reading in a copy of the CT data from the spreadsheet that EL gave me. The file from him is called "2016-03-07 florian lab plate 1 explants.xls" I don't have the plate layout for this either but the CTs are aligned with the annotation data so I am guessing that the rows are sorted appropriately.
 
   
-explantCT<-read.csv("explant CTs only.csv")
+explantCT<-read.csv("input data/explant CTs only.csv")
   
 rep1<-explantCT%>%
   select(-rep2)
@@ -213,7 +231,7 @@ explantAnalysis<-rbind(rep1,rep2)
 
 explantUndet<-explantAnalysis%>%
   filter(CT == "Undetermined")%>%
-  select(TissueID, Timepoint,Treatment,newNanodrop)
+  select(TissueID,Treatment,Timepoint,newNanodrop)
 
 pander(explantUndet)
 
@@ -221,14 +239,14 @@ pander(explantUndet)
 
 Method for analysis of explant samples: 
 
-We did not use a housekeeper or the Mock as controls since the explants weren't size standardized.
-
 * Average the sample replicates
 
 * dCT = 40 - Average CT (because CT of 40 = zero amplification)
 
+* Fold Change = 2^dCT
 
-Here are plots of dCT for each donor and then all together
+
+Here are plots of fold change for each donor and then all together.
 
 ```{r, echo=FALSE, warnings = FALSE}
 
@@ -237,38 +255,42 @@ explantAnalysis<-filter(explantAnalysis,CT!="Undetermined")
 explantAnalysis$CT<-as.numeric(as.character(explantAnalysis$CT))
 
 #get the avg of the reps
-avg_dCT_explantAnalysis<-explantAnalysis%>%
+explantAnalysis<-explantAnalysis%>%
   arrange(Sample.ID)%>%
   group_by(TissueID, Treatment, Timepoint, Sample.ID,Well.Position)%>%
   summarise(AvgCT = mean(CT))%>%
   ungroup()%>%
   arrange(Well.Position)%>%
-  mutate(dCT = 40-AvgCT) #40 = "zero" because it is the max CT you can get
+  mutate(dCT = 40-AvgCT)%>%#40 = "zero" because it is the max CT you can get
+  mutate(FoldChange = 2^dCT)
 
 
-names(avg_dCT_explantAnalysis)[3]<-"Time"
+names(explantAnalysis)[3]<-"Time"
 
-avg_dCT_explantAnalysis$Time<-factor(avg_dCT_explantAnalysis$Time, levels = c("3","8","24"))
+explantAnalysis$Time<-factor(explantAnalysis$Time, levels = c("3","8","24"))
 
-avg_dCT_explantAnalysis$TissueID<-as.factor(avg_dCT_explantAnalysis$TissueID)
+explantAnalysis$TissueID<-as.factor(explantAnalysis$TissueID)
 
 
 #plot it like it's hot
 #by donor
-ggplot(avg_dCT_explantAnalysis,(aes(x = Time, y = dCT)))+
-  geom_point(aes(),size=4.5)+
-  geom_line(aes(group = Treatment))+
-theme(axis.text = element_text(size = 12),
+ggplot(explantAnalysis,(aes(x = Time, y = FoldChange)))+
+  geom_point(aes(color = Treatment),size = 2)+
+  geom_line(aes(color = Treatment, group = Treatment))+
+  scale_y_log10()+
+  
+  theme(axis.text = element_text(size = 12),
       axis.title.x = element_text(size=12), 
     axis.title.y = element_text(size=12),
     strip.text = element_text(size =12))+
-facet_grid(TissueID~Treatment)
+facet_wrap(~TissueID)
 
 
 #all together
-ggplot(avg_dCT_explantAnalysis,(aes(x = Time, y = dCT)))+
-  geom_point(aes(),size=3, alpha = .4)+
-  stat_summary(fun.y = mean, geom="point", size = 5.5)+
+ggplot(explantAnalysis,(aes(x = Time, y = FoldChange)))+
+  geom_line(aes(color = TissueID, group = TissueID),size=0.5)+
+  #stat_summary(fun.y = mean, geom="point", size = 5.5)+
+  scale_y_log10()+
 theme(axis.text = element_text(size = 12),
       axis.title.x = element_text(size=12), 
     axis.title.y = element_text(size=12),
@@ -277,8 +299,11 @@ theme(axis.text = element_text(size = 12),
 ```
 
 
-##Conclusion
+##Conclusions
 
-* In 6 of 7 donors, concentrations of ICP27 were either the same for both treatments or higher for V186 infected explants.
+Erik's remarks on the data:
 
-* Erik said that based on his experience, he would say that SD90 did actually infect the explants.
+  * SD90: "What you need to note is that the starting point is very different for each sample.You can't draw a whole lot of conclusions for this, because while you may have added the same amount of virus to each one, the MOI of each sample differed a lot."
+  
+  * V186: "You guys were worried that your virus didn't infect. It did. It also grew, I can't say how much without some better controls, I'm confident saying that it did proliferate inside the biopsies." 
+
