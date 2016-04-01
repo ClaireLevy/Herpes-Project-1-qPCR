@@ -132,9 +132,13 @@ Method for analysis of explant samples:
 
 -   Fold Change = 2^dCT
 
-Here are plots of fold change for each donor and then all together.
+Here are plots of fold change for each donor. The "Fold Change" is relative to an assumed Mock avg CT of 40.
 
-![](qPCR_results_files/figure-markdown_github/unnamed-chunk-5-1.png) ![](qPCR_results_files/figure-markdown_github/unnamed-chunk-5-2.png)
+![](qPCR_results_files/figure-markdown_github/unnamed-chunk-5-1.png)
+
+Here is a plot of the same data but with all of the the donors together. Black dots are the mean and error bars represent one standard error from the mean.
+
+![](qPCR_results_files/figure-markdown_github/unnamed-chunk-6-1.png)
 
 Conclusions
 -----------
@@ -144,3 +148,30 @@ Erik's remarks on the data:
 -   SD90: "What you need to note is that the starting point is very different for each sample.You can't draw a whole lot of conclusions for this, because while you may have added the same amount of virus to each one, the MOI of each sample differed a lot."
 
 -   V186: "You guys were worried that your virus didn't infect. It did. It also grew, I can't say how much without some better controls, I'm confident saying that it did proliferate inside the biopsies."
+
+<!-- -->
+
+    ## R version 3.1.2 (2014-10-31)
+    ## Platform: x86_64-w64-mingw32/x64 (64-bit)
+    ## 
+    ## locale:
+    ## [1] LC_COLLATE=English_United States.1252 
+    ## [2] LC_CTYPE=English_United States.1252   
+    ## [3] LC_MONETARY=English_United States.1252
+    ## [4] LC_NUMERIC=C                          
+    ## [5] LC_TIME=English_United States.1252    
+    ## 
+    ## attached base packages:
+    ## [1] stats     graphics  grDevices utils     datasets  methods   base     
+    ## 
+    ## other attached packages:
+    ## [1] ggplot2_2.0.0     reshape2_1.4.1    pander_0.5.2      plateR_0.2.0.9000
+    ## [5] stringr_1.0.0     dplyr_0.4.3      
+    ## 
+    ## loaded via a namespace (and not attached):
+    ##  [1] assertthat_0.1   colorspace_1.2-6 DBI_0.3.1        digest_0.6.8    
+    ##  [5] evaluate_0.7.2   formatR_1.2      grid_3.1.2       gtable_0.1.2    
+    ##  [9] htmltools_0.2.6  knitr_1.11       labeling_0.3     lazyeval_0.1.10 
+    ## [13] magrittr_1.5     munsell_0.4.2    parallel_3.1.2   plyr_1.8.3      
+    ## [17] R6_2.1.1         Rcpp_0.12.0      rmarkdown_0.8    scales_0.3.0    
+    ## [21] stringi_0.5-5    tools_3.1.2      yaml_2.1.13

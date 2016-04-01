@@ -38,19 +38,21 @@ library(ggplot2)
 #this is just the CTs and well positions
 #from file "2016-03-07 florian lab cell culture.xlsx"
 
-results<-read.csv("input data/cells CT and well only.csv")
+results<-read.csv("input_data_from_Erik/cells CT and well only.csv")
 
 #Adding in the layout that I made manually from Erik's data 
 #from file "2016-03-07 florian lab cell culture.xlsx"
 
-dat<-add_plate(file ="input data/cells qPCR plate layout.csv",results, "Wells")
+dat<-add_plate(file ="input_data_from_Erik/cells qPCR plate layout.csv",results, "Wells")
+
 #There were some wells where I didn't know what the contents were and they were all undetermined. Confirmed with EL that they are controls. I Put unknown for the Gene and and sample in those wells and will remove them here.
 
 dat<-filter(dat, Sample != "unknown")
 
 
-#load the file with more annotation data for the results( other than sample name)
-load("input data/Cells_RNA_for_qPCR.Rdata")
+#load the file with more annotation data for the results(other than sample name)
+
+load("Epithelial_cell_metadata_output/Cells_RNA_for_qPCR.Rdata")
 
 #merge in with results by the common columns
 dat_ann<-merge(dat,Cells_RNA_for_qPCR, by.x = "Sample", by.y = "TubeLabel")
@@ -160,18 +162,27 @@ epiAnalysis$Time<-factor(epiAnalysis$Time,levels = c("3","8","24"))
 
 epiAnalysis$TissueID<-factor(epiAnalysis$TissueID, levels = c("1","4"))
 
-ggplot(epiAnalysis,(aes(x = Time, y = (TargetRNA))))+
-  geom_point(aes(color=Treatment),size=4.5)+
-  geom_line(aes(group = Treatment,color=Treatment))+
-  scale_y_log10()+
-  labs(y = "ICP27 relative to Mock and ACTB")+
+# I want the strip text above the plot to say "186" not "V186"
+# so following advice here:http://stackoverflow.com/questions/3472980/ggplot-how-to-change-facet-labels
+# Notice that I put the ~ before "Treatment" in my facet_grid call. Otherwise the strips are on the right edge.
+
+
+virus_names<-c("SD90" = "SD90",
+               "V186" = "186")
+
+
+ggplot(epiAnalysis,(aes(x = Time, y = log10(TargetRNA))))+
+  geom_point(aes(color = TissueID),size=4.5)+
+  geom_line(aes(group = TissueID,color = TissueID))+
+  scale_color_discrete( name = "Tissue ID")+
+  labs(y = "Fold change normalized to ACTB and relative to Mock \n (log10 transformed)", x = "Time (hrs)")+
 theme(axis.text = element_text(size = 12),
       axis.title.x = element_text(size=12), 
-    axis.title.y = element_text(size=12),
+    axis.title.y = element_text(size=12, vjust = 0.6),
     strip.text = element_text(size =12))+
-facet_wrap(~TissueID)
+facet_grid(.~ Treatment , labeller = as_labeller(virus_names))
   
-  ##### DANGER: I have different results than Erik's plot, looks like the labels are mixed up but I don't know what his plate layout looked like or how he assigned the raw results back to the sample names.I rechecked my manual matching of the samples to their well positions below. 
+### DANGER: I have different results than Erik's plot, looks like the labels are mixed up but I don't know what his plate layout looked like or how he assigned the raw results back to the sample names.I rechecked my manual matching of the samples to their well positions below. 
 #Update: I found a mistake in his plotting, labels were matched with the wrong data.
 #########################################################
 
@@ -214,7 +225,7 @@ Two samples had undetermined values. Maybe the concentrations were too low? For 
 #reading in a copy of the CT data from the spreadsheet that EL gave me. The file from him is called "2016-03-07 florian lab plate 1 explants.xls" I don't have the plate layout for this either but the CTs are aligned with the annotation data so I am guessing that the rows are sorted appropriately.
 
   
-explantCT<-read.csv("input data/explant CTs only.csv")
+explantCT<-read.csv("input_data_from_Erik/explant CTs only.csv")
   
 rep1<-explantCT%>%
   select(-rep2)
@@ -246,7 +257,7 @@ Method for analysis of explant samples:
 * Fold Change = 2^dCT
 
 
-Here are plots of fold change for each donor and then all together.
+Here are plots of fold change for each donor. The "Fold Change" is relative to an assumed Mock avg CT of 40. 
 
 ```{r, echo=FALSE, warnings = FALSE}
 
@@ -284,18 +295,27 @@ ggplot(explantAnalysis,(aes(x = Time, y = FoldChange)))+
     axis.title.y = element_text(size=12),
     strip.text = element_text(size =12))+
 facet_wrap(~TissueID)
+```
 
+
+Here is a plot of the same data but with all of the the donors together. Black dots are the mean and error bars represent one standard error from the mean.
+
+```{r, echo=FALSE, warnings = FALSE}
 
 #all together
-ggplot(explantAnalysis,(aes(x = Time, y = FoldChange)))+
+
+ggplot(explantAnalysis,(aes(x = Time, y = log10(FoldChange))))+
+  geom_point(aes(color = TissueID),size = 3.5 )+
   geom_line(aes(color = TissueID, group = TissueID),size=0.5)+
-  #stat_summary(fun.y = mean, geom="point", size = 5.5)+
-  scale_y_log10()+
+  scale_color_discrete( name = "Tissue ID")+
+  stat_summary(fun.data = mean_se )+
+  stat_summary(fun.y = mean, geom="point", size = 4.5)+
+  labs(y = "Fold Change relative to CT of 40 \n (log 10 scale)", x = "Time (hrs)")+
 theme(axis.text = element_text(size = 12),
       axis.title.x = element_text(size=12), 
-    axis.title.y = element_text(size=12),
+    axis.title.y = element_text(size=12, vjust = 0.6 ),
     strip.text = element_text(size =12))+
-  facet_wrap(~Treatment)
+facet_grid(.~ Treatment , labeller = as_labeller(virus_names)) 
 ```
 
 
@@ -307,3 +327,6 @@ Erik's remarks on the data:
   
   * V186: "You guys were worried that your virus didn't infect. It did. It also grew, I can't say how much without some better controls, I'm confident saying that it did proliferate inside the biopsies." 
 
+```{r, echo=FALSE, warnings = FALSE}
+
+sessionInfo()
