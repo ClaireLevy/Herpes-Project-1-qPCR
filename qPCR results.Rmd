@@ -172,7 +172,7 @@ ggplot(epiAnalysis,(aes(x = Time, y = log10(TargetRNA))))+
   geom_point(aes(color = TissueID),size=4.5)+
   geom_line(aes(group = TissueID,color = TissueID))+
   scale_color_discrete( name = "Tissue ID")+
-  labs(y = "Fold change normalized to ACTB and relative to Mock \n (log10 transformed)", x = "Time (hrs)")+
+  labs(y = "Fold relative to Mock \n (log10 scale)", x = "Time (hrs)")+
 theme(axis.text = element_text(size = 12),
       axis.title.x = element_text(size=12), 
     axis.title.y = element_text(size=12, vjust = 0.6),
@@ -316,8 +316,8 @@ ggplot(explantAnalysis,(aes(x = Time, y = log10(FoldChange))))+
   geom_point(aes(color = TissueID),size = 3.5 )+
   geom_line(aes(color = TissueID, group = TissueID),size=0.5)+
   scale_color_discrete( name = "Tissue ID")+
-  stat_summary(fun.data = mean_se )+
-  stat_summary(fun.y = mean, geom="point", size = 4.5)+
+  stat_summary(fun.data = mean_se)+
+  stat_summary(fun.y = mean,geom = "point", size = 2, shape = 95)+
   labs(y = "Fold Change relative to CT of 40 \n (log 10 scale)", x = "Time (hrs)")+
 theme(axis.text = element_text(size = 12),
       axis.title.x = element_text(size=12), 
