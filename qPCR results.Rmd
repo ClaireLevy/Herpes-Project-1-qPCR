@@ -162,13 +162,10 @@ epiAnalysis$Time<-factor(epiAnalysis$Time,levels = c("3","8","24"))
 
 epiAnalysis$TissueID<-factor(epiAnalysis$TissueID, levels = c("1","4"))
 
-# I want the strip text above the plot to say "186" not "V186"
-# so following advice here:http://stackoverflow.com/questions/3472980/ggplot-how-to-change-facet-labels
-# Notice that I put the ~ before "Treatment" in my facet_grid call. Otherwise the strips are on the right edge.
 
+### It turns out that "V186" should actually be just called "186" so I'm replacing those names here.
 
-virus_names<-c("SD90" = "SD90",
-               "V186" = "186")
+epiAnalysis$Treatment<- str_replace(epiAnalysis$Treatment, "V186", "186")
 
 
 ggplot(epiAnalysis,(aes(x = Time, y = log10(TargetRNA))))+
@@ -180,7 +177,7 @@ theme(axis.text = element_text(size = 12),
       axis.title.x = element_text(size=12), 
     axis.title.y = element_text(size=12, vjust = 0.6),
     strip.text = element_text(size =12))+
-facet_grid(.~ Treatment , labeller = as_labeller(virus_names))
+facet_grid(~Treatment)
   
 ### DANGER: I have different results than Erik's plot, looks like the labels are mixed up but I don't know what his plate layout looked like or how he assigned the raw results back to the sample names.I rechecked my manual matching of the samples to their well positions below. 
 #Update: I found a mistake in his plotting, labels were matched with the wrong data.
@@ -265,6 +262,9 @@ explantAnalysis<-filter(explantAnalysis,CT!="Undetermined")
 
 explantAnalysis$CT<-as.numeric(as.character(explantAnalysis$CT))
 
+
+
+
 #get the avg of the reps
 explantAnalysis<-explantAnalysis%>%
   arrange(Sample.ID)%>%
@@ -272,7 +272,7 @@ explantAnalysis<-explantAnalysis%>%
   summarise(AvgCT = mean(CT))%>%
   ungroup()%>%
   arrange(Well.Position)%>%
-  mutate(dCT = 40-AvgCT)%>%#40 = "zero" because it is the max CT you can get
+  mutate(dCT = 40-AvgCT)%>%#40 = "zero" because it is the max CT you can get ie no amplification. Basically we are assuming a mock sample here.
   mutate(FoldChange = 2^dCT)
 
 
@@ -282,19 +282,27 @@ explantAnalysis$Time<-factor(explantAnalysis$Time, levels = c("3","8","24"))
 
 explantAnalysis$TissueID<-as.factor(explantAnalysis$TissueID)
 
+### It turns out that "V186" should actually be just called "186" so I'm replacing those names here.
+
+explantAnalysis$Treatment<-str_replace(explantAnalysis$Treatment, "V186","186")
+
 
 #plot it like it's hot
 #by donor
-ggplot(explantAnalysis,(aes(x = Time, y = FoldChange)))+
-  geom_point(aes(color = Treatment),size = 2)+
-  geom_line(aes(color = Treatment, group = Treatment))+
-  scale_y_log10()+
-  
-  theme(axis.text = element_text(size = 12),
+
+
+ggplot(explantAnalysis,(aes(x = Time, y = log10(FoldChange))))+
+  geom_point(aes(color = Treatment),size = 3.5 )+
+  geom_line(aes(color = Treatment, group = Treatment),size=0.5)+
+  scale_color_discrete( name = "Tissue ID")+
+  labs(y = "Fold Change relative to CT of 40 \n (log 10 scale)", x = "Time (hrs)")+
+theme(axis.text = element_text(size = 12),
       axis.title.x = element_text(size=12), 
-    axis.title.y = element_text(size=12),
+    axis.title.y = element_text(size=12, vjust = 0.6 ),
     strip.text = element_text(size =12))+
 facet_wrap(~TissueID)
+
+
 ```
 
 
@@ -315,7 +323,7 @@ theme(axis.text = element_text(size = 12),
       axis.title.x = element_text(size=12), 
     axis.title.y = element_text(size=12, vjust = 0.6 ),
     strip.text = element_text(size =12))+
-facet_grid(.~ Treatment , labeller = as_labeller(virus_names)) 
+facet_wrap(~ Treatment) 
 ```
 
 
