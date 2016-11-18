@@ -1,9 +1,7 @@
 ---
 title: "qPCR of vaginal explant and epithelial cell RNA"
 date: "March 11, 2016"
-output:
-  md_document:
-    variant: markdown_github
+output: github_document
 ---
 
 These data are from qPCR experiments done by Erik Layton (Corey/Zhu lab) using the same RNA that was used on the epithelial and explant microarray experiments. 
@@ -29,7 +27,7 @@ Caveats for epithelial cell qPCR data:
 
 library(dplyr)
 library(stringr)
-library(plateR)
+library(plater)
 library(pander)
 library(reshape2)
 library(ggplot2)
@@ -169,8 +167,8 @@ epiAnalysis$Treatment<- str_replace(epiAnalysis$Treatment, "V186", "186")
 
 
 ggplot(epiAnalysis,(aes(x = Time, y = log10(TargetRNA))))+
-  geom_point(aes(color = TissueID),size=4.5)+
   geom_line(aes(group = TissueID,color = TissueID))+
+  geom_point(aes(color = TissueID),size=2.5)+
   scale_color_discrete( name = "Tissue ID")+
   labs(y = "Fold relative to Mock \n (log10 scale)", x = "Time (hrs)")+
 theme(axis.text = element_text(size = 12),
@@ -178,6 +176,9 @@ theme(axis.text = element_text(size = 12),
     axis.title.y = element_text(size=12, vjust = 0.6),
     strip.text = element_text(size =12))+
 facet_grid(~Treatment)
+
+
+ggsave("epiAnalysis.png", width = 3.75, height =2.55, units = "in", dpi = 600)
   
 ### DANGER: I have different results than Erik's plot, looks like the labels are mixed up but I don't know what his plate layout looked like or how he assigned the raw results back to the sample names.I rechecked my manual matching of the samples to their well positions below. 
 #Update: I found a mistake in his plotting, labels were matched with the wrong data.
@@ -214,7 +215,7 @@ facet_grid(~Treatment)
 For these samples, Erik did not use a housekeeping gene and we didn't use the Mock samples since the explants were not size-standardized. All explants were exposed to the same amount of virus, but if  an explant used for the Mock treatment was bigger than a "treated" explant, and therefore had more cellular RNA, the relative method of analysis would be inaccurate.
 
 
-Two samples had undetermined values. Maybe the concentrations were too low? For these, I used the value of the other replicate instead of the average of the two.
+One sample had an undetermined value. Maybe the concentration was too low? I used the value of the other replicate instead of the average of the two.
 
 ```{r, echo=FALSE, warnings = FALSE}
 ##Now I'm reading in the explant data. 
@@ -223,6 +224,12 @@ Two samples had undetermined values. Maybe the concentrations were too low? For 
 
   
 explantCT<-read.csv("input_data_from_Erik/explant CTs only.csv")
+
+
+#17Nov16 update: I was reviewing the inventory for these samples and saw that we used a "D2" sample here for 324-T2-V1 (SD90). I don't know if we did this on purpose before but I am removing it here since all the other samples are D1 and it was our goal to analyze D1 results.
+
+explantCT<-explantCT %>%
+  filter(Dose != "D2")
   
 rep1<-explantCT%>%
   select(-rep2)
@@ -236,6 +243,9 @@ rep2<-explantCT%>%
 names(rep2)[10]<-"CT"
 
 explantAnalysis<-rbind(rep1,rep2)
+
+
+
 
 explantUndet<-explantAnalysis%>%
   filter(CT == "Undetermined")%>%
@@ -254,7 +264,7 @@ Method for analysis of explant samples:
 * Fold Change = 2^dCT
 
 
-Here are plots of fold change for each donor. The "Fold Change" is relative to an assumed Mock avg CT of 40. 
+Here are plots of fold change for each donor. The "Fold Change" is relative to an assumed Mock avg CT of 40. Note that we are missing a data point for 324 8hr time point for SD90. We didn't find RNA for this sample.
 
 ```{r, echo=FALSE, warnings = FALSE}
 
@@ -306,18 +316,18 @@ facet_wrap(~TissueID)
 ```
 
 
-Here is a plot of the same data but with all of the the donors together. Black dots are the mean and error bars represent one standard error from the mean.
+Here is a plot of the same data but with all of the the donors together. Black bars are the mean and error bars represent one standard error from the mean.
 
 ```{r, echo=FALSE, warnings = FALSE}
 
 #all together
 
 ggplot(explantAnalysis,(aes(x = Time, y = log10(FoldChange))))+
-  geom_point(aes(color = TissueID),size = 3.5 )+
+  geom_point(aes(color = TissueID),size = 2.5 )+
   geom_line(aes(color = TissueID, group = TissueID),size=0.5)+
   scale_color_discrete( name = "Tissue ID")+
   stat_summary(fun.data = mean_se, geom = "linerange")+
-  stat_summary(fun.y = mean, geom = "point",shape = 3, size = 6)+
+  stat_summary(fun.y = mean, geom = "point",shape = 95, size = 10)+
   labs(y = "Fold Change relative to CT of 40 \n (log 10 scale)", x = "Time (hrs)")+
 theme(axis.text = element_text(size = 12),
       axis.title.x = element_text(size=12), 
@@ -325,7 +335,7 @@ theme(axis.text = element_text(size = 12),
     strip.text = element_text(size =12))+
 facet_wrap(~ Treatment) 
 
-
+ggsave("allDonorsPlot.png", width = 3.75, height =2.55, units = "in", dpi = 600)
 ```
 
 

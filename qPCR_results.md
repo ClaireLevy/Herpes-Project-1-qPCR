@@ -1,3 +1,7 @@
+qPCR of vaginal explant and epithelial cell RNA
+================
+March 11, 2016
+
 These data are from qPCR experiments done by Erik Layton (Corey/Zhu lab) using the same RNA that was used on the epithelial and explant microarray experiments.
 
 We chose one HSV2 gene (ICP27, Immediate Early) and used beta actin (ACTB) as a housekeeper for the epithelial cell assay. The assays use a FAM dye label and a non-fluorescent quencher. Samples were assayed in replicate.
@@ -19,7 +23,7 @@ Caveats for epithelial cell qPCR data:
 
 These replicates got "Undetermined" results from the qPCR machine, but all were Mock samples and the concentration looks ok.
 
-<table>
+<table style="width:69%;">
 <colgroup>
 <col width="15%" />
 <col width="16%" />
@@ -91,9 +95,9 @@ Explant Results
 
 For these samples, Erik did not use a housekeeping gene and we didn't use the Mock samples since the explants were not size-standardized. All explants were exposed to the same amount of virus, but if an explant used for the Mock treatment was bigger than a "treated" explant, and therefore had more cellular RNA, the relative method of analysis would be inaccurate.
 
-Two samples had undetermined values. Maybe the concentrations were too low? For these, I used the value of the other replicate instead of the average of the two.
+One sample had an undetermined value. Maybe the concentration was too low? I used the value of the other replicate instead of the average of the two.
 
-<table>
+<table style="width:67%;">
 <colgroup>
 <col width="15%" />
 <col width="16%" />
@@ -115,12 +119,6 @@ Two samples had undetermined values. Maybe the concentrations were too low? For 
 <td align="center">3</td>
 <td align="center">4.89</td>
 </tr>
-<tr class="even">
-<td align="center">324</td>
-<td align="center">SD90</td>
-<td align="center">8</td>
-<td align="center">5.47</td>
-</tr>
 </tbody>
 </table>
 
@@ -132,11 +130,11 @@ Method for analysis of explant samples:
 
 -   Fold Change = 2^dCT
 
-Here are plots of fold change for each donor. The "Fold Change" is relative to an assumed Mock avg CT of 40.
+Here are plots of fold change for each donor. The "Fold Change" is relative to an assumed Mock avg CT of 40. Note that we are missing a data point for 324 8hr time point for SD90. We didn't find RNA for this sample.
 
 ![](qPCR_results_files/figure-markdown_github/unnamed-chunk-5-1.png)
 
-Here is a plot of the same data but with all of the the donors together. Black dots are the mean and error bars represent one standard error from the mean.
+Here is a plot of the same data but with all of the the donors together. Black bars are the mean and error bars represent one standard error from the mean.
 
 ![](qPCR_results_files/figure-markdown_github/unnamed-chunk-6-1.png)
 
@@ -151,8 +149,9 @@ Erik's remarks on the data:
 
 <!-- -->
 
-    ## R version 3.1.2 (2014-10-31)
+    ## R version 3.3.0 (2016-05-03)
     ## Platform: x86_64-w64-mingw32/x64 (64-bit)
+    ## Running under: Windows 7 x64 (build 7601) Service Pack 1
     ## 
     ## locale:
     ## [1] LC_COLLATE=English_United States.1252 
@@ -165,13 +164,13 @@ Erik's remarks on the data:
     ## [1] stats     graphics  grDevices utils     datasets  methods   base     
     ## 
     ## other attached packages:
-    ## [1] ggplot2_2.0.0     reshape2_1.4.1    pander_0.5.2      plateR_0.2.0.9000
-    ## [5] stringr_1.0.0     dplyr_0.4.3      
+    ## [1] ggplot2_2.1.0  reshape2_1.4.1 pander_0.6.0   plater_1.0.0  
+    ## [5] stringr_1.1.0  dplyr_0.5.0   
     ## 
     ## loaded via a namespace (and not attached):
-    ##  [1] assertthat_0.1   colorspace_1.2-6 DBI_0.3.1        digest_0.6.8    
-    ##  [5] evaluate_0.7.2   formatR_1.2      grid_3.1.2       gtable_0.1.2    
-    ##  [9] htmltools_0.2.6  knitr_1.11       labeling_0.3     lazyeval_0.1.10 
-    ## [13] magrittr_1.5     munsell_0.4.2    parallel_3.1.2   plyr_1.8.3      
-    ## [17] R6_2.1.1         Rcpp_0.12.0      rmarkdown_0.8    scales_0.3.0    
-    ## [21] stringi_0.5-5    tools_3.1.2      yaml_2.1.13
+    ##  [1] Rcpp_0.12.6      knitr_1.14       magrittr_1.5     munsell_0.4.3   
+    ##  [5] colorspace_1.2-6 R6_2.1.3         plyr_1.8.4       tools_3.3.0     
+    ##  [9] grid_3.3.0       gtable_0.2.0     DBI_0.5          htmltools_0.3.5 
+    ## [13] yaml_2.1.13      lazyeval_0.2.0   assertthat_0.1   digest_0.6.10   
+    ## [17] tibble_1.1       formatR_1.4      evaluate_0.9     rmarkdown_1.0   
+    ## [21] labeling_0.3     stringi_1.1.1    scales_0.4.0
